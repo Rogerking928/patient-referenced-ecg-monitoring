@@ -12,7 +12,7 @@ cfg = config.load()
 O = lambda *p: out(cfg, *p)
 have = lambda *p: O(*p).exists()
 
-TASKS = [("stage_auroc_macro", "Stage classification\n(macro AUROC, 5 classes)", 0.5, (0.45, 1.0)),
+TASKS = [("stage_auroc_macro", "State classification\n(macro AUROC, 5 classes)", 0.5, (0.45, 1.0)),
          ("volume_r2", "Blood-volume loss\n(R²)", 0.0, (-0.35, 1.0)),
          ("decomp_auroc", "Imminent decompensation\n(AUROC, 10 min horizon)", 0.5, (0.45, 1.0)),
          ("reserve_r2", "Physiological reserve\n(R²)", 0.0, (-0.35, 1.0))]
@@ -65,6 +65,7 @@ if have("confusions.npz"):
         G.heat(ax, C[k], short, short, vmin=0, vmax=1, fmt="{:.2f}")
         ax.set_title(G.MODEL_LABEL.get(k, k), fontsize=10)
         ax.set_xlabel("Predicted")
+        plt.setp(ax.get_xticklabels(), rotation=35, ha="right", rotation_mode="anchor")
         if ax is axes[0]:
             ax.set_ylabel("True state")
     fig.suptitle("Figure 6  Row-normalised confusion matrices (fraction of each true state)",
@@ -78,7 +79,8 @@ if have("results_controls.csv"):
     Rm = pd.read_csv(O("results_main.csv")) if have("results_main.csv") else None
 
     # ---- F7 negative controls and rate ablation
-    sel = Cc[Cc.experiment.isin(["C2_shuffled_ecg", "C3_random_labels",
+    sel = Cc[Cc.experiment.isin(["C2_shuffled_ecg", "C2c_moment_matched_noise",
+                                 "C3_random_labels", "C3b_fully_random_labels",
                                  "C4_rate_ablation", "C5_rr_vs_morphology"])]
     ref_rows = []
     if Rm is not None:
@@ -87,23 +89,52 @@ if have("results_controls.csv"):
             r["experiment"] = "reference (intact data)"
             ref_rows.append(r)
     sel = pd.concat(ref_rows + [sel], ignore_index=True)
-    lab = [f"{r.model}\n({r.experiment})" for _, r in sel.iterrows()]
-    lab = [l.replace("_", " ") for l in lab]
-    is_neg = sel.experiment.isin(["C2_shuffled_ecg", "C3_random_labels"]).to_numpy()
-    cols = [G.STATUS["critical"] if n else G.CAT[0] for n in is_neg]
+    EXP = {"reference (intact data)": "intact data",
+           "C2_shuffled_ecg": "within-window permutation",
+           "C2c_moment_matched_noise": "moment-matched noise",
+           "C3_random_labels": "block label permutation",
+           "C3b_fully_random_labels": "full label permutation",
+           "C4_rate_ablation": "rate ablation", "C5_rr_vs_morphology": "rate ablation"}
+
+    MNAME = {"handcrafted_xgb": "Handcrafted", "raw_waveform_cnn": "Raw waveform",
+             "handcrafted_xgb_shuffled": "Handcrafted", "raw_waveform_cnn_shuffled": "Raw waveform",
+             "handcrafted_xgb_randomlabel": "Handcrafted",
+             "raw_waveform_cnn_randomlabel": "Raw waveform",
+             "raw_waveform_cnn_rate_removed": "Raw waveform, rate-normalised beats",
+             "handcrafted_morphology_only_no_rr": "Handcrafted, morphology only",
+             "handcrafted_rr_series_only": "Handcrafted, RR series only",
+             "handcrafted_no_rate_features": "Handcrafted, rate features removed",
+             "handcrafted_xgb_moment_noise": "Handcrafted",
+             "handcrafted_xgb_fully_random_labels": "Handcrafted",
+             "raw_waveform_cnn_fully_random_labels": "Raw waveform"}
+
+    def _mname(m):
+        return MNAME.get(m, m.replace("_", " "))
+    lab = [f"{_mname(r.model)}\n({EXP.get(r.experiment, r.experiment)})"
+           for _, r in sel.iterrows()]
+    first = sel.experiment.isin(["C2_shuffled_ecg", "C3_random_labels"]).to_numpy()
+    redesigned = sel.experiment.isin(["C2c_moment_matched_noise",
+                                      "C3b_fully_random_labels"]).to_numpy()
+    cols = [G.STATUS["critical"] if f else (G.INK if r else G.CAT[0])
+            for f, r in zip(first, redesigned)]
     fig, axes = plt.subplots(1, 4, figsize=(16.5, 6.4))
     for ax, (key, name, ref, xlim) in zip(axes, TASKS):
         G.dot_ci(ax, lab, sel[key].to_numpy(float),
                  sel.get(key + "_lo", pd.Series(np.nan, index=sel.index)).to_numpy(float),
                  sel.get(key + "_hi", pd.Series(np.nan, index=sel.index)).to_numpy(float),
                  colours=cols, ref=ref, ref_label="chance" if ref == 0.5 else "no skill",
-                 xlabel=name, xlim=xlim)
+                 xlabel=name, xlim=(min(xlim[0], 0.38), xlim[1]) if ref == 0.5 else xlim)
         if ax is not axes[0]:
             ax.set_yticklabels([])
+    from matplotlib.patches import Patch as _P
+    fig.legend(handles=[_P(color=G.STATUS["critical"], label="negative control as first designed"),
+                        _P(color=G.INK, label="redesigned negative control"),
+                        _P(color=G.CAT[0], label="intact data and rate ablations")],
+               loc="lower center", ncol=3, fontsize=8, bbox_to_anchor=(0.5, -0.02))
     fig.suptitle("Figure 7  Negative controls and rate ablations "
                  "(red = a control that must land at chance)",
                  x=0.008, ha="left", fontsize=11, fontweight="bold", color=G.INK)
-    fig.tight_layout(rect=[0, 0, 1, 0.94])
+    fig.tight_layout(rect=[0, 0.05, 1, 0.94])
     G.finish(fig, figpath(cfg, "F07_controls.png"), tight=False)
 
     # ---- F8 noise + medication
@@ -120,7 +151,7 @@ if have("results_controls.csv"):
         ax.set_xlabel("Noise amplitude multiplier")
         ax.set_ylabel(name.replace("\n", " "), fontsize=8)
     axes[0].legend(loc="lower left", bbox_to_anchor=(0, 1.02), ncol=3,
-                   fontsize=7.5, handlelength=1.6, columnspacing=1.2)
+                   fontsize=7.5, handlelength=2.8, columnspacing=1.2)
     fig.suptitle("Figure 8  Noise robustness: models fixed, test recordings re-rendered "
                  "at higher artefact amplitude",
                  x=0.008, ha="left", fontsize=11, fontweight="bold", color=G.INK)
@@ -139,10 +170,12 @@ if have("results_controls.csv"):
                        color=G.MODEL_COLOUR[m], label=G.MODEL_LABEL[m], zorder=2)
             ax.axhline(ref, color=G.STATUS["critical"], lw=1.2, ls=(0, (4, 3)))
             ax.set_xticks(xs)
-            ax.set_xticklabels([p.replace("_", " ") for p in pert], rotation=18, ha="right", fontsize=8)
+            PL = {"all_beta_blocked": "all\nbeta-blocked", "none_beta_blocked": "none\nbeta-blocked",
+                  "all_vasodilated": "resting\npressure -6%"}
+            ax.set_xticklabels([PL.get(p, p.replace("_", " ")) for p in pert], fontsize=7.5)
             ax.set_ylabel(name.replace("\n", " "), fontsize=8)
         axes[0].legend(loc="lower left", bbox_to_anchor=(0, 1.02), ncol=3,
-                   fontsize=7.5, handlelength=1.6, columnspacing=1.2)
+                   fontsize=7.5, handlelength=2.8, columnspacing=1.2)
         fig.suptitle("Figure 9  Medication and confounder perturbation: the whole cohort "
                      "re-simulated under a different drug regimen",
                      x=0.008, ha="left", fontsize=11, fontweight="bold", color=G.INK)
@@ -170,7 +203,7 @@ if have("results_controls.csv"):
             ax.set_xticklabels([p.replace("_", "\n") for p in phs], fontsize=8)
             ax.set_ylabel(name.replace("\n", " "), fontsize=8)
         axes[0].legend(loc="lower left", bbox_to_anchor=(0, 1.02), ncol=3,
-                   fontsize=7.5, handlelength=1.6, columnspacing=1.2)
+                   fontsize=7.5, handlelength=2.8, columnspacing=1.2)
         fig.suptitle("Figure 10  Leave-one-phenotype-out (dotted line = same model trained on "
                      "all phenotypes)", x=0.008, ha="left", fontsize=11, fontweight="bold", color=G.INK)
         fig.tight_layout(rect=[0, 0, 1, 0.90])
@@ -341,7 +374,7 @@ if have("test_trajectories.parquet"):
         axes[2, c].set_xlabel("Time (min)")
     axes[0, 0].legend(fontsize=7, loc="upper left", ncol=2)
     fig.text(0.008, 0.012, "Dashed red line marks the first early-decompensation time step. "
-             "Background shading = true clinical stage.", fontsize=8, color=G.INK2)
+             "Background shading = true clinical state.", fontsize=8, color=G.INK2)
     fig.suptitle("Figure 15  Predicted trajectories for three held-out subjects",
                  x=0.008, ha="left", fontsize=11, fontweight="bold", color=G.INK)
     fig.tight_layout(rect=[0, 0.03, 1, 0.94])
@@ -425,7 +458,7 @@ if have("ptbxl_summary.csv"):
         axes[0].text(i, v, f"{v}\n{100*v/len(qc):.0f}%", ha="center", va="bottom", fontsize=7.5,
                      color=G.INK2)
     axes[0].set_xticks(range(len(steps)))
-    axes[0].set_xticklabels(steps, rotation=25, ha="right", fontsize=7.5)
+    axes[0].set_xticklabels(steps, rotation=40, ha="right", rotation_mode="anchor", fontsize=7.5)
     axes[0].set_title("Quality-control funnel, PTB-XL", fontsize=10)
     axes[0].set_ylim(0, max(vals) * 1.16)
 
@@ -442,7 +475,8 @@ if have("ptbxl_summary.csv"):
     axes[2].hist(smd.smd, bins=26, color=G.CAT[0], zorder=2)
     axes[2].axvline(0, color=G.AXIS, lw=1.0)
     axes[2].set_xlabel("standardised mean difference")
-    axes[2].set_title(f"All {len(smd)} features\nmedian |SMD| = {ps.median_abs_smd:.2f}", fontsize=10)
+    axes[2].set_title(f"All {int(np.isfinite(smd.smd).sum())} features with a finite SMD\n"
+                      f"median |SMD| = {ps.median_abs_smd:.2f}", fontsize=10)
 
     bars = [("Handcrafted\nfeature space", ps.domain_auroc_features),
             ("Encoder\nembedding space", ps.domain_auroc_embedding)]
@@ -534,24 +568,26 @@ if have("matched_hr_main.csv"):
         b.set_edgecolor(G.SURFACE)
     for lo, hi in sorted({(r.hr_lo, r.hr_hi) for _, r in mh.iterrows()}):
         for v in (lo, hi):
-            axes[0].axvline(v, color=G.MUTED, lw=0.9, ls=":", zorder=0)
+            axes[0].axvline(v, color=G.INK2, lw=1.0, ls=":", zorder=1)
     axes[0].set_yticks(ypos)
     axes[0].set_yticklabels(G.STAGE_LABELS, fontsize=8)
     axes[0].set_xlabel("Heart rate (bpm)")
     axes[0].set_title("Heart rate by state, and the matched bands", fontsize=10)
-    axes[0].grid(axis="y", visible=False)
+    axes[0].grid(False)                       # band edges must not hide behind grid lines
 
     show = [m for m in ["handcrafted_xgb", "raw_waveform_cnn", "hybrid",
                         "baseline_heart_rate_only"] if (mh.model == m).any()]
-    for j, (key, name, ref) in enumerate([("stage_auroc_macro", "Stage macro AUROC", 0.5),
+    for j, (key, name, ref) in enumerate([("stage_auroc_macro", "State macro AUROC", 0.5),
                                           ("volume_r2", "Blood-volume loss R²", 0.0)]):
         ax = axes[1 + j]
         for m_ in show:
             d = mh[mh.model == m_].sort_values("hr_lo")
             x = (d.hr_lo + d.hr_hi) / 2
-            ax.plot(x, d[key], "-o", color=G.MODEL_COLOUR.get(m_, G.MUTED),
+            hr_only = m_ == "baseline_heart_rate_only"      # red, as in Figure 3A
+            ax.plot(x, d[key], marker="o", ls="-",
+                    color=G.STATUS["critical"] if hr_only else G.MODEL_COLOUR.get(m_, G.MUTED),
                     label=G.MODEL_LABEL.get(m_, m_), markeredgecolor=G.SURFACE,
-                    markeredgewidth=1.2, ls="--" if m_ == "baseline_heart_rate_only" else "-")
+                    markeredgewidth=1.2)
         ax.axhline(ref, color=G.STATUS["critical"], lw=1.3, ls=(0, (4, 3)))
         ax.set_xlabel("Heart-rate band centre (bpm)")
         ax.set_ylabel(name, fontsize=8)
@@ -560,9 +596,6 @@ if have("matched_hr_main.csv"):
     fig.suptitle("Figure 20  Matching on heart rate: a rate-only model collapses, the full "
                  "models do not",
                  x=0.008, ha="left", fontsize=11, fontweight="bold", color=G.INK)
-    fig.text(0.008, 0.012, "Feature ablation cannot answer this question because heart rate "
-             "is recoverable from every ablated representation (see the report, section 7.2); "
-             "matching on it can.", fontsize=8, color=G.INK2)
     fig.tight_layout(rect=[0, 0.05, 1, 0.92])
     G.finish(fig, figpath(cfg, "F20_matched_heart_rate.png"), tight=False)
 

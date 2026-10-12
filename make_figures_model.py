@@ -27,11 +27,11 @@ NODES = {
     "hr":            (0.520, 0.31, "Heart rate", "derived"),
     "resp":          (0.520, 0.09, "Respiratory\nrate", "latent"),
     "co":            (0.675, 0.72, "Cardiac\noutput", "latent"),
-    "map":           (0.675, 0.50, "Mean arterial\npressure", "derived"),
+    "map":           (0.675, 0.60, "Mean arterial\npressure", "derived"),
     "ox":            (0.675, 0.92, "Oxygen\ndelivery", "latent"),
     "metab":         (0.830, 0.83, "Metabolic\nstress", "latent"),
-    "ecg":           (0.945, 0.42, "ECG\nwaveform", "observed"),
-    "subject":       (0.205, 0.93, "Subject\nparameters", "modifier"),
+    "ecg":           (0.945, 0.30, "ECG\nwaveform", "observed"),
+    "subject":       (0.205, 0.10, "Subject\nparameters", "modifier"),
     "noise":         (0.830, 0.10, "Recording\nnoise", "modifier"),
 }
 FEEDBACK = {("map", "symp"), ("map", "para"), ("metab", "symp"), ("hr", "sv")}
@@ -55,8 +55,15 @@ for a_, b_ in EDGES:
     xb, yb = NODES[b_][:2]
     to_ecg = b_ == "ecg"
     fb = (a_, b_) in FEEDBACK
+    # routed so that no arrow into the waveform passes behind a box it does not belong to
+    # (curvatures checked against every box by geometry: no arrow into the waveform is hidden)
+    rad = {("symp", "ecg"): -0.22, ("preload", "ecg"): 0.05, ("subject", "ecg"): 0.05,
+           ("para", "ecg"): 0.10, ("hr", "ecg"): 0.0, ("metab", "ecg"): 0.0,
+           ("resp", "ecg"): 0.0, ("noise", "ecg"): 0.0, ("subject", "symp"): -0.15,
+           ("subject", "preload"): -0.10}.get(
+        (a_, b_), -0.28 if fb else 0.10)
     ax.add_patch(FancyArrowPatch((xa, ya), (xb, yb),
-                                 connectionstyle=f"arc3,rad={-0.28 if fb else 0.10}",
+                                 connectionstyle=f"arc3,rad={rad}",
                                  arrowstyle="-|>", mutation_scale=13,
                                  lw=1.7 if to_ecg else 1.1,
                                  color=G.CAT[1] if to_ecg else (G.MUTED if fb else G.AXIS),
@@ -85,12 +92,6 @@ ax.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.5, -0.11), ncol
 ax.set_xlim(-0.005, 1.005)
 ax.set_ylim(0.0, 1.0)
 ax.axis("off")
-ax.set_title("Figure 1  Physiological causal diagram of the generative model", pad=4)
-fig.text(0.62, 0.985,
-         "There is no arrow from haemorrhage to the ECG. Volume loss reaches the waveform only\n"
-         "through preload, autonomic tone, respiration and metabolic stress, and every one of\n"
-         "those arrows carries a subject-specific gain.",
-         ha="left", va="top", fontsize=8.5, color=G.INK2)
 fig.tight_layout(rect=[0, 0.03, 1, 0.90])
 G.finish(fig, figpath(cfg, "F01_causal_diagram.png"), tight=False)
 
@@ -138,9 +139,7 @@ for r, (ph_name, ph_lab) in enumerate(rows):
                     label=name if r == 0 else None)
         if v.sum() < len(v):
             ax.axvline(tt[-1], color=G.STATUS["critical"], lw=1.2, ls=":")
-            if c == 0:
-                ax.text(tt[-1], ax.get_ylim()[0], " simulation truncated:\n non-survivable pressure",
-                        fontsize=6.5, color=G.STATUS["critical"], va="bottom", ha="left")
+            # the marker is explained in the caption; text here would sit on the curves
         lo_, hi_ = ax.get_ylim()
         ax.set_ylim(lo_, hi_ + 0.30 * (hi_ - lo_))     # headroom for the legend
         if r == 0:
@@ -151,9 +150,11 @@ for r, (ph_name, ph_lab) in enumerate(rows):
             ax.set_xlabel("Time (min)")
         if c == 0:
             ax.set_ylabel(ph_lab, fontsize=9.5, color=G.INK, fontweight="bold")
-G.stage_legend(axes[2, 0], loc="upper center", bbox_to_anchor=(2.35, -0.22), ncol=5, fontsize=8.5)
+_present = sorted({int(k) for i_ in [pick(p_) for p_, _ in rows] for k in np.unique(lab[i_][viab[i_]])})
+G.stage_legend(axes[2, 0], present=_present, loc="upper center", bbox_to_anchor=(2.35, -0.22),
+               ncol=5, fontsize=8.5)
 fig.suptitle("Figure 2  Latent trajectories of one representative bleeding subject per "
-             "compensation phenotype (background shading = clinical stage)",
+             "compensation phenotype (background shading = clinical state)",
              x=0.008, ha="left", fontsize=11, fontweight="bold", color=G.INK)
 fig.tight_layout(rect=[0, 0.055, 1, 0.965])
 G.finish(fig, figpath(cfg, "F02_trajectories.png"), tight=False)

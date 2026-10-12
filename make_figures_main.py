@@ -142,12 +142,14 @@ SERIES = [("Volume lost (%)", lambda i, v: [("Volume lost", D[i, v, 6] * 100, G.
                                             ("MAP (mmHg)", D[i, v, 2], G.CAT[1], "--")]),
           ("Autonomic reserve", lambda i, v: [("Reserve", D[i, v, 4], G.CAT[0], "-")])]
 axB0, axB_all = None, []
+_presentB = set()
 for r, (ph_name, ph_lab) in enumerate(rowsB):
     m = (subj.phenotype == ph_name) & (subj.bleeder == 1)
     ok = np.where(m.to_numpy() & (lab == 3).any(1))[0]
     i = int(ok[0]) if len(ok) else int(np.where(m.to_numpy())[0][0])
     v = viab[i]
     tt, st = t[v], smooth_stage(lab[i][v])
+    _presentB |= {int(k) for k in np.unique(st)}
     for c, (name, fn) in enumerate(SERIES):
         ax = fig.add_subplot(gsB[r, c])
         axB_all.append(ax)
@@ -159,13 +161,15 @@ for r, (ph_name, ph_lab) in enumerate(rowsB):
         if r == 0:
             ax.set_title(name, fontsize=8.8)
             if len(fn(i, v)) > 1:      # a one-line panel is direct-labelled by its title
-                ax.legend(loc="center left", fontsize=6.6, handlelength=1.6)
+                lo_, hi_ = ax.get_ylim()
+                ax.set_ylim(lo_, hi_ + 0.45 * (hi_ - lo_))   # headroom: legend clear of the lines
+                ax.legend(loc="upper left", fontsize=6.6, handlelength=2.8, frameon=False)
         if r == 1:
             ax.set_xlabel("Time (min)", fontsize=8)
         if c == 0:
             ax.set_ylabel(ph_lab, fontsize=8.8, color=G.INK, fontweight="bold")
         ax.tick_params(labelsize=7.5)
-G.stage_legend(axB_all[-2], loc="upper center", bbox_to_anchor=(0.5, -0.36), ncol=5,
+G.stage_legend(axB_all[-2], present=sorted(_presentB), loc="upper center", bbox_to_anchor=(0.5, -0.36), ncol=5,
                fontsize=7.4, columnspacing=0.8, handlelength=1.0, handletextpad=0.4)
 
 # ---------------------------------------------------------------- 1C ECG across states
@@ -260,7 +264,7 @@ head(fig, axA, "A", "No arrow runs from haemorrhage to the ECG", pad=0.045)
 head(fig, axB_all, "B", "Pressure is defended while autonomic reserve is consumed", pad=0.045)
 head(fig, [axC0, axC_beat], "C", "QRS amplitude falls with preload; QT shortens with rate")
 head(fig, axD, "D", "Study workflow")
-G.finish(fig, figpath(cfg, "MAIN1_design.png"), tight=False, dpi=600, vector=True)
+G.finish(fig, figpath(cfg, "MAIN1_design.png"), tight=False, dpi=700, vector=True)
 print("MAIN1 written")
 
 
@@ -324,7 +328,7 @@ LONG = pd.read_csv(O("longitudinal.csv"))
 LROWS = [("single window", "A single 30 s window", G.MUTED),
          ("5 minute trajectory", "The preceding 5 min", G.SEQ[4]),
          ("10 minute trajectory", "The preceding 10 min", G.SEQ[7]),
-         ("change from the subject's first window", "Change from reference", G.CAT[0]),
+         ("change from the subject's first window", "Change from first window", G.CAT[0]),
          ("value + slope + curvature", "Value + slope + curvature", G.CAT[2]),
          ("recurrent model over the 10 minute trajectory", "Recurrent model, 10 min", G.CAT[1])]
 LROWS = [r for r in LROWS if (LONG.representation == r[0]).any()]
@@ -345,6 +349,7 @@ for c, (key, name, ref, xlim) in enumerate(CTASK):
     G.dot_ci(ax, [r[1] for r in LROWS], est, None, None, colours=[r[2] for r in LROWS],
              ref=ref, ref_label=None, xlabel=name, xlim=xlim, fmt="{:.2f}")
     ax.tick_params(labelsize=7.2)
+    ax.set_xticks([0.6, 0.8] if ref == 0.5 else [0.0, 0.5])   # no tick on a shared edge
     ax.set_xlabel(name, fontsize=7.6)
     if c:
         ax.set_yticklabels([])
@@ -360,7 +365,7 @@ g_tra = [float(tra_[k]) - float(base[k]) for k in TASK_KEY]
 y = np.arange(len(short))[::-1]
 h = 0.34
 axD.barh(y + h / 2, g_per, height=h, color=G.CAT[0], zorder=2,
-         label="Change from reference")
+         label="Change from first window")
 axD.barh(y - h / 2, g_tra, height=h, color=G.CAT[2], zorder=2,
          label="Value + slope + curvature")
 axD.axvline(0, color=G.AXIS, lw=1.0)
@@ -383,7 +388,7 @@ head(fig, axA_all, "A", "A single 30 s ECG, cross-sectional models")
 head(fig, axB_all, "B", "The same ECG read against the subject’s own baseline")
 head(fig, axC_all, "C", "How much of the subject's recent history the model sees")
 head(fig, axD, "D", "Complementary, not competing")
-G.finish(fig, figpath(cfg, "MAIN2_personalisation.png"), tight=False, dpi=600, vector=True)
+G.finish(fig, figpath(cfg, "MAIN2_personalisation.png"), tight=False, dpi=700, vector=True)
 print("MAIN2 written")
 
 
@@ -423,20 +428,25 @@ axA.legend(fontsize=7.6, loc="lower right", ncol=2, borderaxespad=0.2)
 axB = fig.add_subplot(outer[0, 1])
 LK = pd.read_csv(O("leakage_baselines.csv"))
 MT = pd.read_csv(O("matched_time.csv"))
+# Rows that contain when the subject's trajectory ends (fraction completed, duration,
+# censoring) are oracle -- a monitor cannot know them -- and are drawn in grey and
+# labelled as such; the prospective counterpart comes from run_incremental.py.
 SHOW = [("window index only", "Window index only", G.MUTED),
-        ("fraction of trajectory completed", "Trajectory position only", G.MUTED),
+        ("fraction of trajectory completed", "Trajectory position (oracle)", G.MUTED),
         ("measured heart rate only", "Measured heart rate only", G.STATUS["critical"]),
-        ("heart rate + time", "Heart rate + time", G.STATUS["critical"]),
-        # "all metadata" in run_leakage_and_matching.py = elapsed time (t_min, window
-        # index) + subject characteristics; named for what it contains
-        ("all metadata, no ECG", "Elapsed time + characteristics", G.STATUS["critical"]),
-        ("all metadata + heart rate", "Elapsed time + characteristics\n+ heart rate",
-         G.STATUS["critical"]),
-        ("ECG: handcrafted_xgb", "ECG: handcrafted features", G.CAT[0])]
+        ("heart rate + time", "Heart rate + time", G.STATUS["critical"])]
 SHOW = [s for s in SHOW if (LK.features == s[0]).any()]
 labs = [s[1] for s in SHOW]
 vals = [float(LK.loc[LK.features == s[0], "stage_auroc_macro"].values[0]) for s in SHOW]
 cols = [s[2] for s in SHOW]
+IVp = pd.read_csv(O("incremental_value.csv"))
+_p = IVp[(IVp.setting == "all held-out windows") & (IVp.task == "stage_auroc_macro")].iloc[0]
+labs += ["Elapsed time + characteristics\n+ heart rate (prospective)",
+         "  + trajectory end (oracle)", "ECG: handcrafted features"]
+vals += [float(_p.metadata_hr),
+         float(LK.loc[LK.features == "all metadata + heart rate", "stage_auroc_macro"].values[0]),
+         float(LK.loc[LK.features == "ECG: handcrafted_xgb", "stage_auroc_macro"].values[0])]
+cols += [G.STATUS["critical"], G.MUTED, G.CAT[0]]
 mt_h = MT[(MT.subset == "time+rate-matched") & (MT.model == "handcrafted_xgb")]
 mt_r = MT[(MT.subset == "time+rate-matched") & (MT.model == "baseline_heart_rate_only")]
 if len(mt_h) and len(mt_r):
@@ -478,10 +488,17 @@ for k, (key, name, vmin, vmax, fmt) in enumerate(
                 Mx[r_, c_] = float(d[key].values[0])
     G.heat(ax, Mx, [GL[t] for t in TEST], [GL[t] for t in TRAIN],
            vmin=vmin, vmax=vmax, fmt=fmt)
-    for r_, tr in enumerate(TRAIN):                    # ring the self-tests
-        if tr in TEST:
-            ax.add_patch(plt.Rectangle((TEST.index(tr) - 0.5, r_ - 0.5), 1, 1, fill=False,
-                                       edgecolor=G.INK, lw=2.0, zorder=5))
+    for r_, tr in enumerate(TRAIN):                    # ring every in-distribution test
+        for te in TEST:
+            if te in tr.split("+"):
+                ax.add_patch(plt.Rectangle((TEST.index(te) - 0.5, r_ - 0.5), 1, 1, fill=False,
+                                           edgecolor=G.INK, lw=2.0, zorder=5))
+    if ax.images:                                      # colour scale for each heat map
+        cb = fig.colorbar(ax.images[0], ax=ax, orientation="horizontal", fraction=0.045,
+                          pad=0.42, aspect=18)
+        cb.set_ticks([vmin, (vmin + vmax) / 2, vmax])
+        cb.ax.tick_params(labelsize=6.5)
+        cb.outline.set_visible(False)
     ax.set_title(name, fontsize=8.6)
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
     ax.set_xlabel("Tested on", fontsize=8.4)
@@ -523,7 +540,7 @@ head(fig, axA, "A", "Rate-only model collapses inside narrow rate bands")
 head(fig, axB, "B", "Baselines without any ECG, and time–rate matching")
 head(fig, axC_all, "C", "Trained on one generator, tested on another")
 head(fig, axD, "D", "A degraded personal reference: gain against reference quality")
-G.finish(fig, figpath(cfg, "MAIN3_defence.png"), tight=False, dpi=600, vector=True)
+G.finish(fig, figpath(cfg, "MAIN3_defence.png"), tight=False, dpi=700, vector=True)
 print("MAIN3 written")
 
 
@@ -561,7 +578,7 @@ ORDER = [("heart rate only", "Heart rate only", G.STATUS["critical"]),
          ("all ECG features, absolute", "ECG, absolute", G.MUTED),
          ("recorded confounders only", "Anaesthetic and vasopressor state", G.CAT[3]),
          ("all ECG features, absolute + change", "ECG, absolute + change", G.SEQ[5]),
-         ("ECG (absolute + change) + confounders", "ECG + anaesthetic state", G.CAT[2]),
+         ("ECG (absolute + change) + confounders", "ECG (absolute + change)\n+ anaesthetic state", G.CAT[2]),
          ("all ECG features, change from own baseline", "ECG, change from own baseline",
           G.CAT[0])]
 rows_ = [(l, float(hyp.loc[hyp.predictors == k, "auroc"].values[0]), c)
@@ -622,6 +639,8 @@ for setting, tag, c in [("all held-out windows", "sim.", G.MUTED),
                         ("time + rate matched", "sim., matched", G.CAT[0])]:
     for k, l in TL.items():
         d = IV[(IV.setting == setting) & (IV.task == k)]
+        if len(d) and k == "decomp_auroc" and int(d.n_decomp_events.values[0]) < 20:
+            continue                     # too few events in the matched subset (see Table S13)
         if len(d):
             items.append((f"{l}  ({tag})", float(d.delta.values[0]),
                           float(d.delta_lo.values[0]), float(d.delta_hi.values[0]), c))
@@ -642,7 +661,7 @@ axC.set_yticklabels([it[0] for it in items], fontsize=8.6)
 axC.set_xlabel("Change in performance when the ECG is added to elapsed time,\n"
                "heart rate and recorded patient state", fontsize=8.6)
 axC.grid(axis="y", visible=False)
-# Colour is the only thing that groups these ten rows into the three settings they
+# Colour is the only thing that groups these nine rows into the three settings they
 # come from, so it is named here as well as in each row's own suffix.
 axC.legend(handles=[
     Line2D([], [], color=G.MUTED, marker="o", lw=2.0, markersize=7,
@@ -655,7 +674,7 @@ axC.legend(handles=[
            markeredgecolor=G.SURFACE, markeredgewidth=1.5,
            label="Real intraoperative cohort")],
     loc="upper left", bbox_to_anchor=(-0.55, -0.24), ncol=3, fontsize=7.2, frameon=False,
-    handlelength=1.6, borderpad=0.2, columnspacing=1.2)
+    handlelength=2.8, borderpad=0.2, columnspacing=1.2)
 # bootstrap and interval conventions are stated in the caption
 
 # ---- 4D how far the simulation is from a real recording
@@ -704,5 +723,5 @@ head(fig, axB, "B", "Diagnosis: the bleeding operation is not identified")
 head(fig, axC, "C", "What the ECG adds to what is already known")
 head(fig, [axD1, axD2], "D", "Simulation versus real recordings")
 fig.add_subplot = _add
-G.finish(fig, figpath(cfg, "MAIN4_realworld.png"), tight=False, dpi=600, vector=True)
+G.finish(fig, figpath(cfg, "MAIN4_realworld.png"), tight=False, dpi=700, vector=True)
 print("MAIN4 written")

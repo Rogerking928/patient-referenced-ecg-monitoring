@@ -161,7 +161,7 @@ def incremental(tag, base_cols):
     B = prep(base_cols)
     pb, pf = cvp(B), cvp(np.hstack([B, DEL]))
     cases_ = np.unique(grp)
-    rng = np.random.default_rng(20261012)
+    rng = np.random.default_rng(20260802)   # same resamples as run_incremental.py
     bw, bc_ = [], []
     for _ in range(400):
         pick = rng.choice(cases_, len(cases_), replace=True)

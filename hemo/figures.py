@@ -146,15 +146,20 @@ def report_overlaps(fig, tol_pt=0.6):
             a, b = bbs[i], bbs[j]
             if a is None or b is None:
                 continue
+            if ts[i].get_rotation() % 90 and ts[j].get_rotation() % 90:
+                continue          # axis-aligned boxes of slanted labels overlap; glyphs do not
             ox = min(a.x1, b.x1) - max(a.x0, b.x0)
             oy = min(a.y1, b.y1) - max(a.y0, b.y0)
             if ox > tol_pt * k and oy > tol_pt * k:
                 n += 1
-                print(f"   OVERLAP {ts[i].get_text()[:30]!r} x {ts[j].get_text()[:30]!r}")
+                print(f"   OVERLAP {ts[i].get_text()[:30]!r} x {ts[j].get_text()[:30]!r}"
+                      f"  at ({a.x0/fig.dpi:.2f},{a.y0/fig.dpi:.2f}) in")
     print(f"   overlap check: {n} overlapping label pairs")
 
 
-def finish(fig, path, tight=True, dpi=300, vector=False):
+def finish(fig, path, tight=True, dpi=700, vector=False):
+    if fig._suptitle is not None:              # the caption carries the title and number
+        fig._suptitle.set_visible(False)
     """Write the figure.
 
     dpi is deliberately modest by default: these figures are embedded by the
@@ -167,7 +172,9 @@ def finish(fig, path, tight=True, dpi=300, vector=False):
         fig.tight_layout()
     if vector:
         _to_print_size(fig)
-    kw = dict(bbox_inches="tight", pad_inches=0.04) if vector else {}
+    if not vector:
+        report_overlaps(fig)
+    kw = dict(bbox_inches="tight", pad_inches=0.04)   # nothing drawn outside the canvas is lost
     fig.savefig(path, dpi=dpi, **kw)
     if vector:
         from pathlib import Path as _P
@@ -237,9 +244,11 @@ def hbar(ax, labels, values, colour=CAT[0], xlabel="", value_fmt="{:.3f}", n_lab
     span = max(values) - min(0, min(values)) + 1e-12
     for i, (yy, v) in enumerate(zip(y, values)):
         if i < n_label:
-            ax.text(v + 0.015 * span, yy, value_fmt.format(v), va="center", fontsize=7.5,
-                    color=INK2)
-    ax.set_xlim(min(0, min(values) * 1.1), max(values) * 1.22)
+            # negative values are labelled to the left of the bar end, clear of the axis
+            ax.text(v + (0.015 if v >= 0 else -0.015) * span, yy, value_fmt.format(v),
+                    va="center", ha="left" if v >= 0 else "right", fontsize=7.5, color=INK2)
+    lo = min(values)
+    ax.set_xlim(min(0, lo - 0.30 * span) if lo < 0 else 0, max(values) * 1.22)
     return ax
 
 
@@ -257,5 +266,7 @@ def stage_bands(ax, t, stage, alpha=0.24, ymin=0, ymax=1):
 def stage_legend(ax, present=None, **kw):
     from matplotlib.patches import Patch
     ks = range(len(STAGE_LABELS)) if present is None else present
-    h = [Patch(facecolor=STAGE_COLOURS[k], label=STAGE_LABELS[k]) for k in ks]
+    # same transparency as the shading it explains, so the key matches what is drawn
+    h = [Patch(facecolor=STAGE_COLOURS[k], alpha=0.24,
+               label=STAGE_LABELS[k]) for k in ks]
     ax.legend(handles=h, **kw)
