@@ -328,7 +328,7 @@ LONG = pd.read_csv(O("longitudinal.csv"))
 LROWS = [("single window", "A single 30 s window", G.MUTED),
          ("5 minute trajectory", "The preceding 5 min", G.SEQ[4]),
          ("10 minute trajectory", "The preceding 10 min", G.SEQ[7]),
-         ("change from the subject's first window", "Change from first window", G.CAT[0]),
+         ("change from the subject's first window", "Change from first\n(pre-onset) window", G.CAT[0]),
          ("value + slope + curvature", "Value + slope + curvature", G.CAT[2]),
          ("recurrent model over the 10 minute trajectory", "Recurrent model, 10 min", G.CAT[1])]
 LROWS = [r for r in LROWS if (LONG.representation == r[0]).any()]
@@ -365,7 +365,7 @@ g_tra = [float(tra_[k]) - float(base[k]) for k in TASK_KEY]
 y = np.arange(len(short))[::-1]
 h = 0.34
 axD.barh(y + h / 2, g_per, height=h, color=G.CAT[0], zorder=2,
-         label="Change from first window")
+         label="Change from first (pre-onset) window")
 axD.barh(y - h / 2, g_tra, height=h, color=G.CAT[2], zorder=2,
          label="Value + slope + curvature")
 axD.axvline(0, color=G.AXIS, lw=1.0)
@@ -496,7 +496,7 @@ for k, (key, name, vmin, vmax, fmt) in enumerate(
     if ax.images:                                      # colour scale for each heat map
         cb = fig.colorbar(ax.images[0], ax=ax, orientation="horizontal", fraction=0.045,
                           pad=0.42, aspect=18)
-        cb.set_ticks([vmin, (vmin + vmax) / 2, vmax])
+        cb.set_ticks([0.6, 0.8])            # interior ticks only: end labels collide
         cb.ax.tick_params(labelsize=6.5)
         cb.outline.set_visible(False)
     ax.set_title(name, fontsize=8.6)

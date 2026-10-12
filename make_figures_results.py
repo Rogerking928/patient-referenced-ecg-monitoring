@@ -542,7 +542,7 @@ if have("tte_results.csv"):
         axes[3].axvline(med, color=G.STATUS["critical"], lw=1.6)
         axes[3].text(med, axes[3].get_ylim()[1] * 0.95, f"  median {med:.1f} min",
                      color=G.STATUS["critical"], fontsize=8, va="top")
-        axes[3].set_xlabel("Minutes from reserve exhaustion to a 10% fall in mean pressure")
+        axes[3].set_xlabel("Reserve exhaustion to a 10% MAP fall (min)")
         axes[3].set_ylabel("Subjects", fontsize=8)
         axes[3].set_title("Size of the window being predicted", fontsize=10)
     fig.suptitle("Figure 19  Time-to-event evaluation of the decompensation head",
