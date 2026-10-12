@@ -1,0 +1,218 @@
+# ECG-as-systemic-sensor proof of concept -- master configuration.
+# Every number the pipeline uses lives here. Nothing is hard-coded downstream.
+
+run:
+  name: personalized-longitudinal-ecg-sensing
+  seed: 20260801
+  n_jobs: 12
+  out_dir: out
+  fig_dir: figures
+
+cohort:
+  n_subjects: 600
+  # patient-level split fractions (subjects never cross splits)
+  frac_train: 0.60
+  frac_val: 0.20
+  frac_test: 0.20
+  # fraction of subjects that never bleed (negative / confounder arm)
+  frac_nonbleeder: 0.25
+  # of the non-bleeders, fraction that receive a pure sympathetic stressor
+  # (pain / anxiety / ambulation) with NO volume loss -- the key confounder
+  frac_stressor_among_nonbleeders: 0.55
+  # phenotype mixture (must sum to 1)
+  phenotypes:
+    high_responder: 0.30      # brisk baroreflex, large HR/vasoconstrictor gain
+    normal_responder: 0.45
+    poor_compensator: 0.25    # blunted gain, early sympathetic withdrawal
+
+simulation:
+  duration_min: 90
+  dt_s: 1.0
+  # ECG windows sampled along the trajectory
+  window_s: 30.0
+  n_windows: 30
+  window_first_min: 1.5
+  window_last_min: 88.5
+  fs: 250
+  leads: [II, V5]
+
+physiology:
+  # --- baseline set-points (population means; per-subject draws in subjects.py)
+  blood_volume_l: 5.0
+  unstressed_fraction: 0.70      # fraction of volume that is unstressed
+  mobilisable_l: 1.0             # venoconstriction can recruit this much
+  stroke_volume_ml: 70.0
+  hr_bpm: 72.0
+  map_mmhg: 90.0
+  cvp_mmhg: 5.0
+  hb_g_dl: 14.0
+  # --- Frank-Starling
+  starling_hill: 2.2
+  starling_k: 0.72
+  systole_k: 0.30                # systolic duration = k*sqrt(RR), s
+  filling_exp: 0.55              # sensitivity of end-diastolic volume to filling time
+  # --- autonomic
+  symp_rest: 0.12
+  symp_max: 1.0
+  para_rest: 0.55
+  tau_symp_s: 18.0
+  tau_para_s: 8.0
+  baro_gain: 3.4                 # proportional arm, multiplied by subject autonomic_gain
+  baro_int_gain: 2.6             # integral arm: slow reflex resetting
+  baro_tau_i: 90.0               # integral time constant, s
+  baro_int_max: 1.6              # anti-windup ceiling
+  chemo_gain: 0.55               # metabolic stress -> sympathetic drive
+  # --- effector gains
+  hr_symp_gain: 0.95             # HR = HR0*(1+g*S)/(1+h*(P-P0))
+  hr_para_gain: 0.55
+  svr_symp_gain: 0.85
+  svr_acidosis_loss: 0.30        # vasoplegia at high metabolic stress
+  inotropy_gain: 0.45
+  # central command (pain / anxiety / ambulation): chronotropic + vagolytic only
+  central_hr_gain: 0.60
+  central_vagal_gain: 0.85
+  # --- sympathetic withdrawal (Bezold-Jarisch-like decompensation)
+  withdraw_width: 0.035
+  withdraw_depth: 0.75
+  # --- oxygen / metabolism
+  do2_crit_frac: 0.55            # DO2 below this fraction -> anaerobic
+  lactate_prod: 0.0042           # mmol/L per second at full deficit (~0.25 mmol/L/min)
+  lactate_clear: 0.00090         # ~13 min half-life
+  # --- respiration
+  resp_rate_bpm: 14.0
+  resp_metab_gain: 5.5
+  resp_symp_gain: 4.0
+  # --- transcapillary refill (mL/s per fraction lost per litre)
+  refill_gain: 0.000060          # ~5 mL/min at 30% loss (transcapillary refill)
+  # --- process noise sd per second
+  noise_symp: 0.0045
+  noise_para: 0.0060
+  noise_resp: 0.09
+  noise_volume_l: 0.0009
+
+hemorrhage:
+  # class I-IV style rates, litres per minute
+  rate_lognorm_mu: -3.05         # ln(L/min); exp(-3.05) ~ 0.047 L/min ~ 47 mL/min
+  rate_lognorm_sigma: 0.55
+  onset_min_range: [8.0, 30.0]
+  # bleeding stops spontaneously (tamponade) in this fraction of bleeders
+  frac_spontaneous_stop: 0.25
+  stop_after_min_range: [10.0, 35.0]
+
+treatment:
+  frac_treated: 0.68             # of bleeders
+  # treatment triggers when MAP falls below this fraction of baseline
+  trigger_map_frac: 0.86
+  trigger_hr_frac: 1.35          # or a sustained tachycardia at 135% of resting
+  detect_delay_min_range: [4.0, 18.0]
+  fluid_rate_l_per_min_range: [0.03, 0.12]
+  # crystalloid stays intravascular only partly
+  intravascular_fraction: 0.35
+  # transfusion (carries Hb) probability once treated
+  frac_blood_products: 0.45
+  # definitive haemostasis (surgery / endoscopy / embolisation) after resuscitation starts
+  haemostasis_delay_min_range: [8.0, 32.0]
+
+staging:
+  # stage boundaries are functions of LATENT state, never of clock time
+  loss_frac_compensated: 0.07
+  map_frac_early: 0.90
+  map_frac_shock: 0.82
+  reserve_frac_early: 0.42       # autonomic reserve exhausted -> early decompensation
+  lactate_shock: 4.0
+  recovery_min_map_frac: 0.94
+  stage_average_s: 60.0           # stages are read off a trailing 60 s mean, not one beat
+  map_nonviable: 34.0            # below this MAP the trajectory is not survivable; windows dropped
+
+ecg:
+  # population-mean morphology, per-subject multiplicative draws in subjects.py
+  p_amp_mv: 0.13
+  p_dur_s: 0.095
+  pr_s: 0.158
+  q_amp_mv: -0.055
+  r_amp_mv: 1.05
+  s_amp_mv: -0.22
+  qrs_dur_s: 0.092
+  t_amp_mv: 0.28
+  t_dur_s: 0.165
+  qt_s: 0.385
+  st_level_mv: 0.0
+  # lead gains (II, V5) for [P, QRS, T]
+  lead_gain:
+    II:  [1.00, 1.00, 1.00]
+    V5:  [0.55, 1.35, 1.15]
+  # --- latent -> morphology couplings (population means; subject draws scale these)
+  coupling:
+    p_amp_preload: 0.55          # atrial stretch
+    p_amp_symp: 0.18
+    p_dur_symp: -0.10
+    pr_symp: -0.16
+    qrs_amp_preload: 0.42        # Brody effect
+    qrs_amp_symp: 0.05
+    qrs_dur_metab: 0.14
+    qt_metab: 0.11
+    qt_rate_alpha: 0.42          # QT = QT0 * RR^alpha
+    t_amp_metab: -0.62
+    t_amp_symp: 0.22
+    st_metab: -0.075             # mV of ST depression at full metabolic stress
+    qtv_symp: 0.011              # s of beat-to-beat QT sd at full sympathetic tone
+  # --- rate variability
+  rsa_gain: 0.055                # RR modulation depth at full parasympathetic tone
+  lf_gain: 0.038
+  lf_hz: 0.10
+  rr_jitter: 0.012
+  # --- noise
+  wander_mv_range: [0.02, 0.16]
+  emg_mv_range: [0.004, 0.045]
+  powerline_mv_range: [0.0, 0.02]
+  powerline_hz: 50.0
+  motion_prob: 0.18              # per window
+  motion_mv_range: [0.05, 0.45]
+  # respiratory amplitude modulation of R wave (preload-dependent)
+  ramp_resp_gain: 0.16
+
+features:
+  rpeak_refractory_s: 0.22
+  median_beat_pre_s: 0.30
+  median_beat_post_s: 0.50
+  lf_band: [0.04, 0.15]
+  hf_band: [0.15, 0.45]
+  sampen_m: 2
+  sampen_r: 0.20
+
+models:
+  handcrafted:
+    xgb:
+      n_estimators: 400
+      max_depth: 5
+      learning_rate: 0.06
+      subsample: 0.85
+      colsample_bytree: 0.75
+      min_child_weight: 4
+      reg_lambda: 1.5
+  cnn:
+    base_channels: 32
+    n_blocks: 5
+    kernel: 9
+    dropout: 0.15
+    embed_dim: 128
+    batch_size: 32
+    lr: 0.0012
+    weight_decay: 0.00005
+    epochs: 14
+    patience: 6
+  hybrid:
+    feat_hidden: 96
+  loss_weights:
+    stage: 1.0
+    volume: 0.6
+    decomp: 0.6
+    reserve: 0.6
+
+tasks:
+  decomp_horizon_min: 10.0       # "will decompensate within N minutes"
+
+controls:
+  noise_multipliers: [1.0, 2.0, 3.0, 5.0]
+  medication_shift: [0.0, 0.5, 1.0]   # fraction of test subjects switched to beta-blocked
+  bootstrap_n: 400

@@ -1,0 +1,36 @@
+# Cross-generator validation: the v2 (leak-free) time design, a smaller cohort so
+# that three full renderings are affordable, and its own output directory.
+run:
+  seed: 20260804
+  out_dir: out_xgen
+
+simulation:
+  duration_min: 240
+  obs_window_min: 90
+  n_windows: 30
+  window_first_min: 1.5
+  window_last_min: 88.5
+
+hemorrhage:
+  rate_lognorm_mu: -2.75
+  rate_lognorm_sigma: 0.85
+  onset_min_range: [2.0, 160.0]
+  frac_spontaneous_stop: 0.30
+  stop_after_min_range: [8.0, 60.0]
+  rebleed_prob: 0.35
+  rebleed_gap_min_range: [10.0, 60.0]
+  rebleed_dur_min_range: [10.0, 70.0]
+
+treatment:
+  frac_treated: 0.45
+  detect_delay_min_range: [4.0, 30.0]
+  haemostasis_delay_min_range: [8.0, 55.0]
+
+cohort:
+  n_subjects: 560
+  frac_nonbleeder: 0.20
+
+models:
+  cnn:
+    epochs: 12
+    patience: 5

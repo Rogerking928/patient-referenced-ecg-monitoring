@@ -1,0 +1,9 @@
+data/
+out*/
+figures/
+__pycache__/
+*.npy
+*.npz
+*.parquet
+*.pt
+*.joblib
