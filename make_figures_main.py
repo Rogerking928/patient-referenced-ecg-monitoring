@@ -161,16 +161,18 @@ for r, (ph_name, ph_lab) in enumerate(rowsB):
         if r == 0:
             ax.set_title(name, fontsize=8.8)
             if len(fn(i, v)) > 1:      # a one-line panel is direct-labelled by its title
-                lo_, hi_ = ax.get_ylim()
-                ax.set_ylim(lo_, hi_ + 0.45 * (hi_ - lo_))   # headroom: legend clear of the lines
-                ax.legend(loc="upper left", fontsize=6.6, handlelength=2.8, frameon=False)
+                _lineB = ax.get_legend_handles_labels()   # keyed below panel B, off the shading
         if r == 1:
             ax.set_xlabel("Time (min)", fontsize=8)
         if c == 0:
             ax.set_ylabel(ph_lab, fontsize=8.8, color=G.INK, fontweight="bold")
         ax.tick_params(labelsize=7.5)
-G.stage_legend(axB_all[-2], present=sorted(_presentB), loc="upper center", bbox_to_anchor=(0.5, -0.36), ncol=5,
-               fontsize=7.4, columnspacing=0.8, handlelength=1.0, handletextpad=0.4)
+from matplotlib.patches import Patch as _PB
+axB_all[-2].legend(
+    handles=_lineB[0] + [_PB(facecolor=G.STAGE_COLOURS[k], alpha=0.24, label=G.STAGE_LABELS[k])
+                         for k in sorted(_presentB)],
+    loc="upper center", bbox_to_anchor=(0.5, -0.36), ncol=len(_lineB[0]) + len(_presentB),
+    fontsize=7.4, columnspacing=0.8, handlelength=1.6, handletextpad=0.4, frameon=False)
 
 # ---------------------------------------------------------------- 1C ECG across states
 gsC = outer[1, 0].subgridspec(4, 2, width_ratios=[2.1, 1.0], hspace=0.62, wspace=0.26)
@@ -194,8 +196,8 @@ for j, k in enumerate(stages_present):
              label=f"_series:{G.STAGE_LABELS[k]} (lead II)")
     axw.set_xlim(0, 6)
     axw.tick_params(labelsize=7)
-    axw.set_title(f"{G.STAGE_LABELS[k]}:  HR {D[i,k0,0]:.0f},  preload {D[i,k0,7]:.2f},  "
-                  f"MAP {D[i,k0,2]:.0f}", fontsize=7.6, fontweight="normal",
+    axw.set_title(f"{G.STAGE_LABELS[k]}: HR {D[i,k0,0]:.0f}, preload {D[i,k0,7]:.2f}, "
+                  f"MAP {D[i,k0,2]:.0f}", fontsize=7.2, fontweight="normal",
                   color=G.STAGE_COLOURS[k] if k >= 2 else G.INK)
     if j == len(stages_present) - 1:
         axw.set_xlabel("Time (s), lead II, 6 s of a 30 s window", fontsize=8)
@@ -216,9 +218,13 @@ axC_beat.set_ylim(-0.22, 1.12)        # headroom so the legend sits above the R 
 axC_beat.set_yticks([-0.2, 0.0, 0.2, 0.4, 0.6])
 axC_beat.set_title("Median beat, lead II", fontsize=8.8)
 axC_beat.set_xlabel("Time from R (ms)", fontsize=8)
-axC_beat.legend(fontsize=6.8, loc="upper right", frameon=False, handlelength=1.2,
-                borderaxespad=0.1)
+axC_beat.legend(fontsize=6.8, loc="upper left", bbox_to_anchor=(0.0, 1.0), frameon=False,
+                handlelength=1.2, borderaxespad=0.1)   # clear of the y axis
 axC_beat.tick_params(labelsize=7.5)
+# ticks on the right: on the left they ran into the strip titles of the panel beside it
+axC_beat.yaxis.tick_right()
+axC_beat.spines["left"].set_visible(False)
+axC_beat.spines["right"].set_visible(False)   # no axis line through the legend
 
 # ---------------------------------------------------------------- 1D workflow
 axD = fig.add_subplot(outer[1, 1])
@@ -416,7 +422,8 @@ for m in ["baseline_heart_rate_only", "handcrafted_xgb", "raw_waveform_cnn", "hy
              lw=2.4 if m == "baseline_heart_rate_only" else 1.9,
              label=G.MODEL_LABEL.get(m, m), markeredgecolor=G.SURFACE, markeredgewidth=1.2)
 axA.axhline(0.5, color=G.STATUS["critical"], lw=1.2, ls=(0, (4, 3)))
-axA.text(0.0, 0.505, "chance", color=G.STATUS["critical"], fontsize=7.5, ha="left", va="bottom")
+axA.text(0.99, 0.505, "chance", color=G.STATUS["critical"], fontsize=7.5, ha="right", va="bottom",
+          transform=axA.get_yaxis_transform())   # right end: the rate-only curve crosses the left
 axA.set_xticks(xx)
 axA.set_xticklabels([b + "\n(n=" + str(int(M[M.band == b].n_band.iloc[0])) + ")"
                      for b in bands], fontsize=8)
@@ -613,8 +620,12 @@ y = np.arange(len(val))[::-1]
 axB.barh(y, val, color=col, height=0.6, zorder=2)
 axB.axvline(0.5, color=G.INK2, lw=1.3, ls=(0, (4, 3)))
 for yy, v in zip(y, val):
-    axB.text(v + 0.006, yy, f"{v:.3f}", va="center", fontsize=7.8, color=G.INK2,
-             bbox=dict(fc="white", ec="none", pad=0.4), zorder=4)
+    if 0 < 0.5 - v < 0.08:      # a label after the bar end would be crossed by the 0.5 line
+        axB.text(v - 0.006, yy, f"{v:.3f}", va="center", ha="right", fontsize=7.8,
+                 color="#ffffff", zorder=4)
+    else:
+        axB.text(v + 0.006, yy, f"{v:.3f}", va="center", fontsize=7.8, color=G.INK2,
+                 bbox=dict(fc="white", ec="none", pad=0.4), zorder=4)
 axB.set_yticks(y)
 axB.set_yticklabels(lab, fontsize=7.8)
 axB.set_xlim(0.3, 0.90)

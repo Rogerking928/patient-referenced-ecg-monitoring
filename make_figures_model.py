@@ -140,19 +140,24 @@ for r, (ph_name, ph_lab) in enumerate(rows):
         if v.sum() < len(v):
             ax.axvline(tt[-1], color=G.STATUS["critical"], lw=1.2, ls=":")
             # the marker is explained in the caption; text here would sit on the curves
-        lo_, hi_ = ax.get_ylim()
-        ax.set_ylim(lo_, hi_ + 0.30 * (hi_ - lo_))     # headroom for the legend
         if r == 0:
             ax.set_title(COLS[c], fontsize=9.5)
-            if len(series) > 1:
-                ax.legend(loc="upper left", fontsize=7.2, framealpha=0.0)
         if r == 2:
             ax.set_xlabel("Time (min)")
         if c == 0:
             ax.set_ylabel(ph_lab, fontsize=9.5, color=G.INK, fontweight="bold")
 _present = sorted({int(k) for i_ in [pick(p_) for p_, _ in rows] for k in np.unique(lab[i_][viab[i_]])})
-G.stage_legend(axes[2, 0], present=_present, loc="upper center", bbox_to_anchor=(2.35, -0.22),
-               ncol=5, fontsize=8.5)
+# one key below the panels, off the shading: solid blue is the first series of each
+# two-line panel, dashed orange the second
+from matplotlib.lines import Line2D as _L2
+from matplotlib.patches import Patch as _P2
+axes[2, 0].legend(
+    handles=[_L2([], [], color=G.CAT[0], lw=1.9, label="Volume lost / heart rate"),
+             _L2([], [], color=G.CAT[1], lw=1.9, ls="--",
+                 label="Preload (% of baseline) / mean arterial pressure")]
+    + [_P2(facecolor=G.STAGE_COLOURS[k], alpha=0.24, label=G.STAGE_LABELS[k]) for k in _present],
+    loc="upper center", bbox_to_anchor=(2.35, -0.22), ncol=2 + len(_present), fontsize=8.0,
+    frameon=False, columnspacing=1.0, handlelength=1.8)
 fig.suptitle("Figure 2  Latent trajectories of one representative bleeding subject per "
              "compensation phenotype (background shading = clinical state)",
              x=0.008, ha="left", fontsize=11, fontweight="bold", color=G.INK)
@@ -178,13 +183,13 @@ for j, k in enumerate(stages_present[:4]):
     axw.plot(tt, sig[0], color=G.STAGE_COLOURS[k], lw=0.9)
     axw.set_xlim(0, 8)
     axw.set_ylabel(G.STAGE_LABELS[k], fontsize=8.5, color=G.INK)
-    axw.text(0.995, 0.04, f"HR {D[i,k0,0]:.0f} bpm   preload {D[i,k0,7]:.2f}   "
-                          f"MAP {D[i,k0,2]:.0f} mmHg   lactate {Z[i,k0,8]:.1f} mmol/L",
+    axw.text(1.0, 1.03, f"HR {D[i,k0,0]:.0f} bpm   preload {D[i,k0,7]:.2f}   "
+                        f"MAP {D[i,k0,2]:.0f} mmHg   lactate {Z[i,k0,8]:.1f} mmol/L",
              transform=axw.transAxes, ha="right", va="bottom", fontsize=7.5, color=G.INK2)
     if j == 3:
         axw.set_xlabel("Time (s)")
     if j == 0:
-        axw.set_title("Lead II, 8 s of a 30 s window", fontsize=9.5)
+        axw.set_title("Lead II, 8 s of a 30 s window", fontsize=9.5, pad=16)   # above the state values
 
     # median beat, both leads
     from hemo import features as FE
@@ -203,7 +208,7 @@ for j, k in enumerate(stages_present[:4]):
         axb.axhline(0, color=G.AXIS, lw=0.8)
         axb.set_xlim(-250, 460)
         if j == 0:
-            axb.set_title(f"Median beat, lead {leadname}", fontsize=9.5)
+            axb.set_title(f"Median beat, lead {leadname}", fontsize=9.5, pad=16)
         if j == 3:
             axb.set_xlabel("Time from R (ms)")
 fig.suptitle("Figure 3  Synthetic ECG of one subject across the haemodynamic states",

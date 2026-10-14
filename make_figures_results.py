@@ -314,7 +314,8 @@ if have("latent_space.npz") and have("meta_test.parquet"):
         m = mte.stage.to_numpy()[idx] == k
         axes[0].scatter(ts[m, 0], ts[m, 1], s=4, color=G.STAGE_COLOURS[k], alpha=0.65,
                         label=G.STAGE_LABELS[k], linewidths=0)
-    axes[0].legend(fontsize=7, markerscale=2.2, loc="best")
+    axes[0].legend(fontsize=7, markerscale=2.2, loc="upper center", bbox_to_anchor=(0.5, -0.02),
+                   ncol=3, columnspacing=0.8, handletextpad=0.2)
     axes[0].set_title("t-SNE of the waveform embedding, by state", fontsize=10)
     sc = axes[1].scatter(ts[:, 0], ts[:, 1], s=4, c=mte.volume_lost.to_numpy()[idx] * 100,
                          cmap=G.CMAP_SEQ, linewidths=0)
@@ -380,7 +381,7 @@ if have("test_trajectories.parquet"):
                             "P(decompensation within 10 min)"]):
         axes[0, c].set_title(t_, fontsize=10)
         axes[2, c].set_xlabel("Time (min)")
-    axes[0, 0].legend(fontsize=7, loc="upper left", ncol=2)
+    _mh, _ml = axes[0, 0].get_legend_handles_labels()
     fig.text(0.008, 0.012, "Dashed red line marks the first early-decompensation time step. "
              "Background shading = true clinical state:", fontsize=8, color=G.INK2)
     from matplotlib.patches import Patch
@@ -388,9 +389,11 @@ if have("test_trajectories.parquet"):
                         for k in sorted(set(tj[tj.subject.isin(picks)].stage.astype(int)))],
                loc="lower left", bbox_to_anchor=(0.43, -0.006), ncol=5, fontsize=7.5,
                frameon=False, handlelength=1.2, columnspacing=1.0)
+    fig.legend(_mh, _ml, loc="lower left", bbox_to_anchor=(0.43, 0.022), ncol=len(_mh),
+               fontsize=7.5, frameon=False, handlelength=1.6, columnspacing=1.0)
     fig.suptitle("Figure 15  Predicted trajectories for three held-out subjects",
                  x=0.008, ha="left", fontsize=11, fontweight="bold", color=G.INK)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.94])
+    fig.tight_layout(rect=[0, 0.055, 1, 0.94])
     G.finish(fig, figpath(cfg, "F15_trajectories_pred.png"), tight=False)
 
 # =================================================================== F16 sensitivity + counterfactual
@@ -498,7 +501,7 @@ if have("ptbxl_summary.csv"):
                 color=[G.STATUS["critical"], G.STATUS["serious"]], zorder=2)
     axes[3].axhline(0.5, color=G.INK2, lw=1.3, ls=(0, (4, 3)))          # as Figure 4D
     axes[3].set_xlim(-0.6, 2.45)
-    axes[3].text(1.5, 0.5, "0.5 =\nindistinguishable", ha="left", va="center",
+    axes[3].text(1.5, 0.515, "0.5 =\nindistinguishable", ha="left", va="bottom",
                  fontsize=7.5, color=G.INK2,
                  bbox=dict(facecolor="white", edgecolor="none", pad=1.0))
     for i, b in enumerate(bars):
@@ -610,7 +613,8 @@ if have("matched_hr_main.csv"):
         ax.set_xlabel("Heart-rate band centre (bpm)")
         ax.set_ylabel(name, fontsize=8)
         ax.set_title(name + " within a band", fontsize=10)
-    axes[1].legend(fontsize=7.5, loc="lower right")
+    axes[1].legend(fontsize=7.5, loc="upper center", bbox_to_anchor=(0.5, -0.2), ncol=4,
+                   columnspacing=1.0)
     fig.suptitle("Figure 20  Matching on heart rate: a rate-only model collapses, the full "
                  "models do not",
                  x=0.008, ha="left", fontsize=11, fontweight="bold", color=G.INK)

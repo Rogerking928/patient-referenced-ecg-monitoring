@@ -64,11 +64,12 @@ def style():
         "font.family": "DejaVu Sans", "font.size": 9,
         "axes.edgecolor": AXIS, "axes.labelcolor": INK2, "axes.titlecolor": INK,
         "axes.titlesize": 10, "axes.titleweight": "bold", "axes.titlelocation": "left",
-        "axes.grid": True, "grid.color": GRID, "grid.linewidth": 0.7,
+        "axes.grid": False, "grid.color": GRID, "grid.linewidth": 0.7,   # no grid lines
         "xtick.color": MUTED, "ytick.color": MUTED,
         "xtick.labelcolor": INK2, "ytick.labelcolor": INK2,
         "axes.spines.top": False, "axes.spines.right": False,
-        "legend.frameon": False, "legend.fontsize": 8,
+        "legend.frameon": True, "legend.facecolor": SURFACE, "legend.edgecolor": "none",
+        "legend.framealpha": 1.0, "legend.fontsize": 8,   # opaque: nothing runs through a legend
         "lines.linewidth": 2.0, "lines.markersize": 6,
     })
 
@@ -200,9 +201,6 @@ def dot_ci(ax, labels, est, lo=None, hi=None, colours=None, ref=None, ref_label=
                     alpha=0.55, zorder=2)
         ax.plot([est[i]], [yy], "o", color=colours[i], markersize=7,
                 markeredgecolor=SURFACE, markeredgewidth=1.6, zorder=3)
-        if annotate:
-            ax.text(est[i], yy + 0.30, fmt.format(est[i]), color=INK2, fontsize=7.5,
-                    ha="center", va="bottom")
     ax.set_yticks(y)
     ax.set_yticklabels(labels, fontsize=8.5)
     ax.set_xlabel(xlabel)
@@ -210,6 +208,25 @@ def dot_ci(ax, labels, est, lo=None, hi=None, colours=None, ref=None, ref_label=
     if xlim:
         ax.set_xlim(*xlim)
     ax.set_ylim(-0.8, len(labels) - 0.2)
+    if annotate:
+        # a value label centred on its point would be crossed by the reference line when
+        # the point sits near it; such labels start just beside the line instead
+        ax.figure.canvas.draw()
+        r = ax.figure.canvas.get_renderer()
+        xr = ax.transData.transform((ref, 0))[0] if ref is not None else None
+        for i, yy in enumerate(y):
+            t = ax.text(est[i], yy + 0.30, fmt.format(est[i]), color=INK2, fontsize=7.5,
+                        ha="center", va="bottom")
+            if xr is None:
+                continue
+            half = 0.65 * t.get_window_extent(r).width       # margin for later re-layout
+            xe = ax.transData.transform((est[i], 0))[0]
+            if abs(xe - xr) < half:
+                t.remove()
+                side = 1 if est[i] >= ref else -1
+                ax.annotate(fmt.format(est[i]), (ref, yy + 0.30), xytext=(4 * side, 0),
+                            textcoords="offset points", color=INK2, fontsize=7.5,
+                            ha="left" if side > 0 else "right", va="bottom")
     return ax
 
 
