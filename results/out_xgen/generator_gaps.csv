@@ -1,0 +1,4 @@
+a,b,discriminability_auroc
+gaussian,dynamical,0.9992469090395545
+gaussian,empirical,0.9999807769026133
+dynamical,empirical,0.9999853360864862

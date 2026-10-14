@@ -1,0 +1,5 @@
+predictors,n_windows,window_auroc,case_auroc
+ECG change only,231,0.48350577297945724,0.4790494058786742
+recorded confounders only,231,0.34667866246813617,0.3527204502814259
+ECG change + confounders,231,0.4574149047833258,0.45340838023764857
+monitor haemodynamics only (MAP and HR change),231,0.5749737591842855,0.5641025641025641

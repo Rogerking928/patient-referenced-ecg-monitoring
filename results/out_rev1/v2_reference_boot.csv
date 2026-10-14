@@ -1,0 +1,10 @@
+comparator,representation,task,delta,lo,hi,n_boot
+population (no reference),first observed window as reference,state,0.07206625828970203,0.02215145634645232,0.10918888080859303,400
+population (no reference),first observed window as reference,volume,0.02321335982894812,-0.020708847815464775,0.05913052585679446,400
+population (no reference),"rolling reference, 15-30 min earlier",state,0.06559106498679956,0.029041052246813064,0.10481865022723513,400
+population (no reference),"rolling reference, 15-30 min earlier",volume,0.008014318280433641,-0.026904759899503763,0.04189269442804965,400
+population (no reference),trajectory (absolute + slope + curvature),dec5,0.11559099787880178,0.07408592591196685,0.152196534096033,400
+first observed window as reference,first-window reference + trajectory,dec5,0.029975278121137205,0.006537987490602188,0.04953191699497158,400
+prospective metadata + heart rate,metadata + heart rate + ECG (first-window reference + trajectory),state,0.08378746550869187,0.06001194105273847,0.10543760649609342,400
+prospective metadata + heart rate,metadata + heart rate + ECG (first-window reference + trajectory),volume,0.03602526670550421,0.02026127496528983,0.056855538369581196,400
+prospective metadata + heart rate,metadata + heart rate + ECG (first-window reference + trajectory),dec5,0.12190690381357872,0.08150895736189596,0.1608896764441672,400

@@ -190,7 +190,8 @@ for j, k in enumerate(stages_present):
     axw = fig.add_subplot(gsC[j, 0])
     if axC0 is None:
         axC0 = axw
-    axw.plot(tw, sig[0], color=G.STAGE_COLOURS[k], lw=0.75)
+    axw.plot(tw, sig[0], color=G.STAGE_COLOURS[k], lw=0.75,
+             label=f"_series:{G.STAGE_LABELS[k]} (lead II)")
     axw.set_xlim(0, 6)
     axw.tick_params(labelsize=7)
     axw.set_title(f"{G.STAGE_LABELS[k]}:  HR {D[i,k0,0]:.0f},  preload {D[i,k0,7]:.2f},  "
@@ -431,7 +432,7 @@ MT = pd.read_csv(O("matched_time.csv"))
 # Rows that contain when the subject's trajectory ends (fraction completed, duration,
 # censoring) are oracle -- a monitor cannot know them -- and are drawn in grey and
 # labelled as such; the prospective counterpart comes from run_incremental.py.
-SHOW = [("window index only", "Window index only", G.MUTED),
+SHOW = [("window index only", "Window index only", G.STATUS["critical"]),
         ("fraction of trajectory completed", "Trajectory position (oracle)", G.MUTED),
         ("measured heart rate only", "Measured heart rate only", G.STATUS["critical"]),
         ("heart rate + time", "Heart rate + time", G.STATUS["critical"])]
@@ -702,7 +703,7 @@ axD2.barh(y, top[sc].to_numpy(), height=0.6, zorder=2,
           color=[G.CAT[0] if v < 0 else G.CAT[1] for v in top[sc]])
 axD2.axvline(0, color=G.AXIS, lw=1.0)
 axD2.set_yticks(y)
-axD2.set_yticklabels([str(f).replace("_", " ") for f in top[fc]], fontsize=7.6)
+axD2.set_yticklabels([G.feature_label(str(f)) for f in top[fc]], fontsize=7.6)
 axD2.set_xlabel("SMD (synthetic − real)", fontsize=8.4)
 axD2.grid(axis="y", visible=False)
 # One line rather than two: the second line used to run into the note below it.

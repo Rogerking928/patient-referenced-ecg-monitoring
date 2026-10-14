@@ -1,0 +1,4 @@
+label_variant,macro_auroc_from_time_alone,comment
+true stage,0.7930874852119694,the outcome itself is strongly time-dependent by construction
+labels permuted in whole blocks between subjects,0.7744902473444952,"the permutation preserves the label's time position, so the control is not negative"
+labels permuted completely,0.4932647030717973,time alignment destroyed; this is what a negative control should look like

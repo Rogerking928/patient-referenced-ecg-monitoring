@@ -1,0 +1,3 @@
+representation,full,without_entropy_dfa
+"all ECG features, absolute",0.43803572859088363,0.4298646158775935
+"all ECG features, change from own baseline",0.6833426793772863,0.6870009880103607

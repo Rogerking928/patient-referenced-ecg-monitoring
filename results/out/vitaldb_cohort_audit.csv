@@ -1,0 +1,2 @@
+cases_retrieved,windows_dropped_qc,cases_after_qc,cases_lost_no_baseline,cases_analysed,windows_analysed,cases_bleeding,cases_control,pos_windows,pos_cases,beats_median,beats_q1,beats_q3,auroc_delta_full,auroc_delta_noent,auroc_abs_full,auroc_abs_noent
+90,94,89,12,77,714,40,37,57,34,36.0,32.0,41.0,0.6833426793772863,0.6870009880103607,0.43803572859088363,0.4298646158775935

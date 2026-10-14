@@ -1,0 +1,22 @@
+parameter,quantity,spearman,p
+preload -> QRS amplitude,gain_reference:volume_r2,-0.6417391304347826,0.0007243804451471961
+preload -> QRS amplitude,gain_trajectory:decomp_auroc_5min,-0.01826086956521739,0.9325072970015154
+preload -> QRS amplitude,reference:stage_auroc_macro,0.06173913043478261,0.7744295754905792
+preload -> P amplitude,gain_reference:volume_r2,-0.32260869565217387,0.12416401155590805
+preload -> P amplitude,gain_trajectory:decomp_auroc_5min,0.09391304347826085,0.6624853858393348
+preload -> P amplitude,reference:stage_auroc_macro,0.4321739130434783,0.034941536627697875
+respiratory QRS modulation,gain_reference:volume_r2,-0.2904347826086956,0.16858358873548313
+respiratory QRS modulation,gain_trajectory:decomp_auroc_5min,0.042608695652173914,0.8432913759776879
+respiratory QRS modulation,reference:stage_auroc_macro,-0.12782608695652173,0.5516845044816037
+metabolic stress -> T amplitude,gain_reference:volume_r2,0.13304347826086957,0.5354237325436197
+metabolic stress -> T amplitude,gain_trajectory:decomp_auroc_5min,-0.09999999999999999,0.6419932296067887
+metabolic stress -> T amplitude,reference:stage_auroc_macro,0.09130434782608696,0.6713412695646412
+metabolic stress -> QRS duration,gain_reference:volume_r2,-0.0008695652173913043,0.9967824967252694
+metabolic stress -> QRS duration,gain_trajectory:decomp_auroc_5min,-0.13043478260869562,0.5435259752175853
+metabolic stress -> QRS duration,reference:stage_auroc_macro,0.24,0.2586462405460084
+metabolic stress -> QT,gain_reference:volume_r2,-0.05130434782608695,0.8118206065534153
+metabolic stress -> QT,gain_trajectory:decomp_auroc_5min,0.31304347826086953,0.1363674584174657
+metabolic stress -> QT,reference:stage_auroc_macro,-0.08434782608695651,0.69516260313585
+between-subject coupling spread,gain_reference:volume_r2,0.2121739130434782,0.31957122228868073
+between-subject coupling spread,gain_trajectory:decomp_auroc_5min,-0.2834782608695652,0.1794834429755076
+between-subject coupling spread,reference:stage_auroc_macro,-0.4765217391304347,0.018565115014353997

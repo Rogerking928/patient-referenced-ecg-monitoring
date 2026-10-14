@@ -79,7 +79,8 @@ if have("results_controls.csv"):
     Rm = pd.read_csv(O("results_main.csv")) if have("results_main.csv") else None
 
     # ---- F7 negative controls and rate ablation
-    sel = Cc[Cc.experiment.isin(["C2_shuffled_ecg", "C2c_moment_matched_noise",
+    sel = Cc[Cc.experiment.isin(["C2_shuffled_ecg", "C2b_shuffled_standardised",
+                                 "C2c_moment_matched_noise",
                                  "C3_random_labels", "C3b_fully_random_labels",
                                  "C4_rate_ablation", "C5_rr_vs_morphology"])]
     ref_rows = []
@@ -91,6 +92,7 @@ if have("results_controls.csv"):
     sel = pd.concat(ref_rows + [sel], ignore_index=True)
     EXP = {"reference (intact data)": "intact data",
            "C2_shuffled_ecg": "within-window permutation",
+           "C2b_shuffled_standardised": "permuted and standardised",
            "C2c_moment_matched_noise": "moment-matched noise",
            "C3_random_labels": "block label permutation",
            "C3b_fully_random_labels": "full label permutation",
@@ -105,6 +107,7 @@ if have("results_controls.csv"):
              "handcrafted_rr_series_only": "Handcrafted, RR series only",
              "handcrafted_no_rate_features": "Handcrafted, rate features removed",
              "handcrafted_xgb_moment_noise": "Handcrafted",
+             "handcrafted_xgb_shuffled_standardised": "Handcrafted",
              "handcrafted_xgb_fully_random_labels": "Handcrafted",
              "raw_waveform_cnn_fully_random_labels": "Raw waveform"}
 
@@ -112,7 +115,8 @@ if have("results_controls.csv"):
         return MNAME.get(m, m.replace("_", " "))
     lab = [f"{_mname(r.model)}\n({EXP.get(r.experiment, r.experiment)})"
            for _, r in sel.iterrows()]
-    first = sel.experiment.isin(["C2_shuffled_ecg", "C3_random_labels"]).to_numpy()
+    first = sel.experiment.isin(["C2_shuffled_ecg", "C2b_shuffled_standardised",
+                                 "C3_random_labels"]).to_numpy()
     redesigned = sel.experiment.isin(["C2c_moment_matched_noise",
                                       "C3b_fully_random_labels"]).to_numpy()
     cols = [G.STATUS["critical"] if f else (G.INK if r else G.CAT[0])
@@ -235,7 +239,7 @@ if have("shap_stage.csv"):
                              gridspec_kw={"width_ratios": [1.25, 1.25, 1.0]})
     for ax, task in zip(axes[:2], ["stage", "volume"]):
         d = pd.read_csv(O(f"shap_{task}.csv")).head(18)
-        G.hbar(ax, d.feature.tolist(), d.mean_abs_shap.to_numpy(), colour=G.CAT[0],
+        G.hbar(ax, [G.feature_label(f) for f in d.feature], d.mean_abs_shap.to_numpy(), colour=G.CAT[0],
                xlabel=f"mean |SHAP| ({task} model)", value_fmt="{:.3f}", n_label=6)
         ax.set_title(f"Top features, {task} head", fontsize=10)
     fams = []
@@ -331,7 +335,7 @@ if have("latent_space.npz") and have("meta_test.parquet"):
         ax.grid(False)
     if probe is not None:
         d = probe.sort_values("r2", ascending=False)
-        G.hbar(axes[3], d.latent.tolist(), d.r2.to_numpy(), colour=G.CAT[0],
+        G.hbar(axes[3], [G.LATENT_LABEL.get(v, v) for v in d.latent], d.r2.to_numpy(), colour=G.CAT[0],
                xlabel="cross-validated R²", n_label=len(d))
         axes[3].set_title("Linear probe: what the embedding encodes", fontsize=10)
     fig.suptitle("Figure 14  Geometry of the learned latent space (held-out subjects)",
@@ -358,11 +362,15 @@ if have("test_trajectories.parquet"):
         G.stage_bands(axes[r, 1], g.t_min.to_numpy(), g.stage.to_numpy())
         axes[r, 1].plot(g.t_min, g.reserve, color=G.INK, lw=2.0, label="True")
         for tag, c in [("hc", G.CAT[0]), ("cnn", G.CAT[1]), ("hyb", G.CAT[2])]:
-            axes[r, 1].plot(g.t_min, g[f"{tag}_reserve"], color=c, lw=1.6, alpha=0.9)
+            axes[r, 1].plot(g.t_min, g[f"{tag}_reserve"], color=c, lw=1.6, alpha=0.9,
+                            label="_series:" + {"hc": "Handcrafted", "cnn": "Raw waveform",
+                                                "hyb": "Hybrid"}[tag])
 
         G.stage_bands(axes[r, 2], g.t_min.to_numpy(), g.stage.to_numpy())
         for tag, c in [("hc", G.CAT[0]), ("cnn", G.CAT[1]), ("hyb", G.CAT[2])]:
-            axes[r, 2].plot(g.t_min, g[f"{tag}_decomp"], color=c, lw=1.6, alpha=0.9)
+            axes[r, 2].plot(g.t_min, g[f"{tag}_decomp"], color=c, lw=1.6, alpha=0.9,
+                            label="_series:" + {"hc": "Handcrafted", "cnn": "Raw waveform",
+                                                "hyb": "Hybrid"}[tag])
         axes[r, 2].set_ylim(0, 1)
         first_bad = g[g.stage >= 2].t_min.min()
         if np.isfinite(first_bad):
@@ -374,7 +382,12 @@ if have("test_trajectories.parquet"):
         axes[2, c].set_xlabel("Time (min)")
     axes[0, 0].legend(fontsize=7, loc="upper left", ncol=2)
     fig.text(0.008, 0.012, "Dashed red line marks the first early-decompensation time step. "
-             "Background shading = true clinical state.", fontsize=8, color=G.INK2)
+             "Background shading = true clinical state:", fontsize=8, color=G.INK2)
+    from matplotlib.patches import Patch
+    fig.legend(handles=[Patch(facecolor=G.STAGE_COLOURS[k], alpha=0.24, label=G.STAGE_LABELS[k])
+                        for k in sorted(set(tj[tj.subject.isin(picks)].stage.astype(int)))],
+               loc="lower left", bbox_to_anchor=(0.43, -0.006), ncol=5, fontsize=7.5,
+               frameon=False, handlelength=1.2, columnspacing=1.0)
     fig.suptitle("Figure 15  Predicted trajectories for three held-out subjects",
                  x=0.008, ha="left", fontsize=11, fontweight="bold", color=G.INK)
     fig.tight_layout(rect=[0, 0.03, 1, 0.94])
@@ -421,7 +434,8 @@ if have("sensitivity.csv") and have("counterfactual.csv"):
             gmean = d.groupby("value")["volume"].mean() * 100
             gsd = d.groupby("value")["volume"].std() * 100
             ax.plot(gmean.index, gmean.values, color=c, lw=2.2, label=G.MODEL_LABEL[m])
-            ax.fill_between(gmean.index, gmean - gsd, gmean + gsd, color=c, alpha=0.18, lw=0)
+            ax.fill_between(gmean.index, gmean - gsd, gmean + gsd, color=c, alpha=0.18, lw=0,
+                            label=f"_series:{G.MODEL_LABEL[m]} (mean ± 1 SD)")
         ax.set_xlabel(lat.replace("_", " "))
         ax.set_ylabel("Predicted volume lost (%)", fontsize=8)
         ax.set_title(f"Counterfactual: move {lat.replace('_',' ')} only", fontsize=10)
@@ -463,10 +477,10 @@ if have("ptbxl_summary.csv"):
     axes[0].set_ylim(0, max(vals) * 1.16)
 
     d = smd.reindex(smd.smd.abs().sort_values(ascending=False).index).head(16)[::-1]
-    cols = [G.DIVERGING[2] if v > 0 else G.DIVERGING[0] for v in d.smd]
+    cols = [G.CAT[1] if v > 0 else G.CAT[0] for v in d.smd]          # as Figure 4D
     axes[1].barh(range(len(d)), d.smd, color=cols, zorder=2)
     axes[1].set_yticks(range(len(d)))
-    axes[1].set_yticklabels(d.feature, fontsize=7.5)
+    axes[1].set_yticklabels([G.feature_label(f) for f in d.feature], fontsize=7.5)
     axes[1].axvline(0, color=G.AXIS, lw=1.0)
     axes[1].set_xlabel("standardised mean difference (synthetic - real)")
     axes[1].set_title("Largest distribution gaps", fontsize=10)
@@ -478,15 +492,19 @@ if have("ptbxl_summary.csv"):
     axes[2].set_title(f"All {int(np.isfinite(smd.smd).sum())} features with a finite SMD\n"
                       f"median |SMD| = {ps.median_abs_smd:.2f}", fontsize=10)
 
-    bars = [("Handcrafted\nfeature space", ps.domain_auroc_features),
+    bars = [("Handcrafted\nfeature space", ps.domain_auroc_features),     # as Figure 4D
             ("Encoder\nembedding space", ps.domain_auroc_embedding)]
-    axes[3].bar([b[0] for b in bars], [b[1] for b in bars], color=G.STATUS["critical"], zorder=2)
-    axes[3].axhline(0.5, color=G.STATUS["good"], lw=1.6, ls=(0, (4, 3)))
-    axes[3].text(0.02, 0.52, "0.5 = indistinguishable", transform=axes[3].transAxes,
-                 fontsize=7.5, color=G.STATUS["good"])
+    axes[3].bar([b[0] for b in bars], [b[1] for b in bars],
+                color=[G.STATUS["critical"], G.STATUS["serious"]], zorder=2)
+    axes[3].axhline(0.5, color=G.INK2, lw=1.3, ls=(0, (4, 3)))          # as Figure 4D
+    axes[3].set_xlim(-0.6, 2.45)
+    axes[3].text(1.5, 0.5, "0.5 =\nindistinguishable", ha="left", va="center",
+                 fontsize=7.5, color=G.INK2,
+                 bbox=dict(facecolor="white", edgecolor="none", pad=1.0))
     for i, b in enumerate(bars):
         axes[3].text(i, b[1], f"{b[1]:.3f}", ha="center", va="bottom", fontsize=8, color=G.INK2)
     axes[3].set_ylim(0.4, 1.05)
+    axes[3].tick_params(axis="x", labelsize=7.5)
     axes[3].set_ylabel("real-vs-synthetic AUROC", fontsize=8)
     axes[3].set_title("Domain discriminability", fontsize=10)
     fig.suptitle("Figure 18  Public-data arm: real-ECG quality control and how far the "

@@ -1,0 +1,4 @@
+step,windows,cases,dropped_cases
+operations retrieved with continuous arterial pressure,882,90,0
+after signal quality control on the windows,788,89,1
+after requiring a usable pre-incision reference window,714,77,12

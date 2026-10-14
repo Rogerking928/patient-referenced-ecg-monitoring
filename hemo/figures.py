@@ -259,8 +259,10 @@ def stage_bands(ax, t, stage, alpha=0.24, ymin=0, ymax=1):
     edges = np.where(np.diff(s) != 0)[0]
     starts = np.r_[0, edges + 1]
     ends = np.r_[edges, len(s) - 1]
+    mid = np.r_[t[0], (t[1:] + t[:-1]) / 2, t[-1]]     # blocks meet half-way, no gaps
     for a, b in zip(starts, ends):
-        ax.axvspan(t[a], t[b], color=STAGE_COLOURS[int(s[a])], alpha=alpha, lw=0, zorder=0)
+        ax.axvspan(mid[a], mid[b + 1], color=STAGE_COLOURS[int(s[a])], alpha=alpha, lw=0,
+                   zorder=0)
 
 
 def stage_legend(ax, present=None, **kw):
@@ -270,3 +272,37 @@ def stage_legend(ax, present=None, **kw):
     h = [Patch(facecolor=STAGE_COLOURS[k], alpha=0.24,
                label=STAGE_LABELS[k]) for k in ks]
     ax.legend(handles=h, **kw)
+
+
+# full names for the handcrafted features and latent variables printed on figure axes
+_FEAT = {"hr_mean": "Mean heart rate", "hr_sd": "Heart-rate SD", "rr_mean": "Mean RR interval",
+         "pnn20": "pNN20", "cvrr": "RR coefficient of variation", "sd1_sd2": "Poincaré SD1/SD2",
+         "lf": "LF power", "hf": "HF power", "lf_hf": "LF/HF ratio",
+         "lf_nu": "LF power, normalised units", "n_beats": "Beat count",
+         "resp_rate_rsa": "Respiratory rate from RSA",
+         "resp_rate_wander": "Respiratory rate from baseline wander",
+         "wander_power": "Baseline-wander power", "hf_noise": "High-frequency noise",
+         "p_amp": "P amplitude", "p_area": "P-wave area", "p_r_ratio": "P/R amplitude ratio",
+         "pr_int": "PR interval", "r_resp_mod": "respiratory R-amplitude modulation",
+         "t_r_ratio": "T/R amplitude ratio", "r_amp_cv": "R-amplitude CV", "s_amp": "S amplitude",
+         "r_amp": "R amplitude", "q_amp": "Q amplitude", "qrs_ptp": "QRS peak-to-peak",
+         "qrs_dur": "QRS duration", "p_dur": "P duration", "st_level": "ST level",
+         "st_slope": "ST slope", "t_amp": "T amplitude", "t_dur": "T duration",
+         "t_sym": "T-wave symmetry", "qt": "QT interval", "t_area": "T-wave area", "qtc": "QTc",
+         "r_amp_sd": "R-amplitude SD", "t_amp_sd": "T-amplitude SD", "qt_sd": "QT SD",
+         "qtv_index": "QT variability index", "beat_corr": "beat-to-beat correlation",
+         "snr_db": "Signal-to-noise ratio", "sdnn": "SDNN", "rmssd": "RMSSD", "pnn50": "pNN50",
+         "rsa_strength": "RSA strength"}
+LATENT_LABEL = {"volume_lost": "Blood volume lost", "preload": "Preload",
+                "symp": "Sympathetic tone", "para": "Parasympathetic tone",
+                "resp": "Respiratory rate", "lactate": "Lactate", "hr_true": "Heart rate",
+                "map_frac": "MAP, fraction of baseline", "reserve": "Autonomic reserve",
+                "sv": "Stroke volume", "co": "Cardiac output"}
+
+
+def feature_label(name):
+    lead, _, key = name.partition("_")
+    if lead in ("I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6") and key:
+        k = _FEAT.get(key, key.replace("_", " "))
+        return f"Lead {lead}: {k}"
+    return _FEAT.get(name, name.replace("_", " "))

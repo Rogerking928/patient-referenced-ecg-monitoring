@@ -1,0 +1,18 @@
+analysis,baseline,level,base_auroc,plus_ecg_auroc,delta,lo,hi,n_boot,n_windows,n_pos,stratum,n_operations,heart rate only,absolute ECG features,patient-referenced ECG features,model,auroc,variance_explained
+incremental,"manuscript set (MAC, propofol, vasopressors, temperature, time, age, sex, HR)",window,0.5728590883601697,0.710646479211728,0.13778739085155822,0.024761116742250094,0.24743354851647206,400.0,714.0,57.0,,,,,,,,
+incremental,"manuscript set (MAC, propofol, vasopressors, temperature, time, age, sex, HR)",operation,0.4972640218878249,0.5355677154582763,0.03830369357045138,-0.08075866188769407,0.15786718749999998,400.0,714.0,57.0,,,,,,,,
+incremental,"extended set (+ remifentanil, BIS, ventilation, their changes, fluids, EBL, operation type)",window,0.7289914283425458,0.7661886832759219,0.03719725493337611,-0.027516902016157155,0.09713270450244839,400.0,714.0,57.0,,,,,,,,
+incremental,"extended set (+ remifentanil, BIS, ventilation, their changes, fluids, EBL, operation type)",operation,0.5909712722298222,0.5725034199726402,-0.01846785225718195,-0.09525714285714285,0.053540092489367794,400.0,714.0,57.0,,,,,,,,
+incremental,"extended concurrent set only (no end-of-case fluid, EBL or operation type)",window,0.6496835696547305,0.7293385671179471,0.07965499746321658,-0.008873293154816119,0.15564291910147635,400.0,714.0,57.0,,,,,,,,
+incremental,"extended concurrent set only (no end-of-case fluid, EBL or operation type)",operation,0.5492476060191518,0.5581395348837209,0.008891928864569132,-0.07512691731057533,0.0927382834556748,400.0,714.0,57.0,,,,,,,,
+stratum,,,,,,,,,361.0,29.0,volatile maintenance (MAC >= 0.3),41.0,0.3003739094308268,0.43799335272122975,0.7296427087660989,,,
+stratum,,,,,,,,,348.0,28.0,"intravenous maintenance (propofol Ce >= 0.5, no volatile)",39.0,0.43080357142857145,0.4385044642857143,0.6312499999999999,,,
+stratum,,,,,,,,,686.0,54.0,no vasopressor infusion running,75.0,0.3538443506797937,0.44224683544303794,0.6868700187529301,,,
+stratum,,,,,,,,,295.0,37.0,first 40 min after incision,77.0,0.3990152943641316,0.49874292897548717,0.6477582233396187,,,
+stratum,,,,,,,,,419.0,20.0,after 40 min,77.0,0.34899749373433586,0.3350877192982456,0.7661654135338345,,,
+stratum,,,,,,,,,343.0,24.0,PEEP >= 5 cmH2O,52.0,0.29780564263322884,0.42306687565308254,0.7234848484848484,,,
+stratum,,,,,,,,,359.0,33.0,PEEP < 5 cmH2O,64.0,0.4079754601226994,0.4465514036066183,0.6445900725041829,,,
+stratum,,,,,,,,,312.0,31.0,BIS 40-60,61.0,0.4070715187693721,0.47434278498450233,0.678395132590977,,,
+stratum,,,,,,,,,402.0,26.0,BIS outside 40-60 or missing,71.0,0.33725450081833064,0.3895253682487725,0.6805441898527005,,,
+residualised,,,,,,,,,,,,,,,,"patient-referenced ECG, residualised",0.6165852225693611,0.06354538900859918
+residualised,,,,,,,,,,,,,,,,the anaesthetic/ventilatory changes alone,0.7193115971053967,0.06354538900859918

@@ -1,0 +1,3 @@
+cohort,level,n_windows,n_cases,n_pos_windows,n_pos_cases,confounders,confounders_plus_ecg,delta,delta_lo,delta_hi,n_boot
+"VitalDB, concurrent hypotension",window level (case-cluster bootstrap),714,77,57,34,0.5728590883601697,0.710646479211728,0.13778739085155822,0.024761116742250094,0.24743354851647206,400
+"VitalDB, concurrent hypotension",case level (median risk per operation),714,77,57,34,0.4972640218878249,0.5355677154582763,0.03830369357045138,-0.08075866188769407,0.15786718749999998,400

@@ -1,0 +1,16 @@
+target,predictors,n,n_pos,auroc,r2,mae,spearman
+hypotension (MAP < 65),heart rate only,714,57.0,0.37213276723009964,,,
+hypotension (MAP < 65),"heart rate, absolute and change",714,57.0,0.48946567331570934,,,
+hypotension (MAP < 65),"all ECG features, absolute",714,57.0,0.43803572859088363,,,
+hypotension (MAP < 65),"all ECG features, change from own baseline",714,57.0,0.6833426793772863,,,
+hypotension (MAP < 65),"all ECG features, absolute + change",714,57.0,0.60284653795829,,,
+hypotension (MAP < 65),recorded confounders only,714,57.0,0.6192688723330396,,,
+hypotension (MAP < 65),ECG (absolute + change) + confounders,714,57.0,0.6620470506555582,,,
+mean arterial pressure (mmHg),heart rate only,714,,,-0.03145265411529796,12.136017650009341,-0.22270522143855476
+mean arterial pressure (mmHg),"heart rate, absolute and change",714,,,-0.014553275522537712,12.130531580094141,0.006377540959823798
+mean arterial pressure (mmHg),"all ECG features, absolute",714,,,-0.13661620529434915,12.734291811475142,-0.1167589121518022
+mean arterial pressure (mmHg),"all ECG features, change from own baseline",714,,,-0.022035829495284043,12.192161349819951,0.17065466507609736
+mean arterial pressure (mmHg),"all ECG features, absolute + change",714,,,-1.809775216761754,16.52752035100628,0.13735986748576337
+mean arterial pressure (mmHg),recorded confounders only,714,,,-0.0010846860794391233,11.98644052139271,0.045386240446555946
+mean arterial pressure (mmHg),ECG (absolute + change) + confounders,714,,,-94.82943666631428,30.081387402361717,0.18582918377605218
+monitor heart rate (positive control),"all ECG features, absolute",713,,,0.21669978166146675,2.2025105739402373,

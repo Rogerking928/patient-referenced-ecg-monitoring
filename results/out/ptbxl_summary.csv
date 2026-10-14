@@ -1,0 +1,2 @@
+n_loaded,qc_pass_frac,qc_pass_frac_synth,n_compared,median_abs_smd,frac_smd_gt_0p5,domain_auroc_features,domain_auroc_embedding,ptbxl_norm_auroc,ptbxl_age_mae
+6000,0.9816666666666667,1.0,1800,0.47936303234198785,0.4444444444444444,0.999933950617284,0.8605813078703702,0.888977377654663,11.295437812805176

@@ -1,0 +1,5 @@
+representation,hr_recovery_r2,hr_mae_bpm
+the full feature set,0.9987795094686347,0.611414340482001
+the feature set minus rate features,0.9930481940985374,1.1058514047883472
+morphology features only,0.9909688643762661,1.137173721681651
+the rate-normalised waveform,0.9624912470021526,2.804244701088913

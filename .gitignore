@@ -1,6 +1,6 @@
-data/
-out*/
-figures/
+/data/
+/out*/
+/figures/
 __pycache__/
 *.npy
 *.npz

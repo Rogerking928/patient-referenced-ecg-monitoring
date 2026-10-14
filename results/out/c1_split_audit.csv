@@ -1,0 +1,2 @@
+experiment,subjects_in_multiple_splits,n_subjects_test,n_subjects_train,n_subjects_val,n_windows_train,n_windows_val,n_windows_test
+C1_split_audit,0,118,361,121,9175,3066,2984

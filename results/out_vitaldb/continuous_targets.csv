@@ -1,0 +1,10 @@
+target,predictors,n,r2,spearman
+change in mean arterial pressure,ECG change,228,0.017628246590852603,0.2791081474725561
+change in mean arterial pressure,recorded confounders,228,-0.11076790788796997,-0.2056451796625818
+change in mean arterial pressure,ECG change + confounders,228,-0.036282060279660744,0.1680416979485971
+change in pulse pressure,ECG change,224,-0.13322527539670137,0.10204100153860349
+change in pulse pressure,recorded confounders,224,-0.0958573453748297,0.1269732297387332
+change in pulse pressure,ECG change + confounders,224,-0.14436961702724327,0.1402601326715861
+change in monitor heart rate,ECG change,230,0.6985019503736165,0.8632382573846559
+change in monitor heart rate,recorded confounders,230,-0.10434328075933852,-0.1983950937567585
+change in monitor heart rate,ECG change + confounders,230,0.6974481311589851,0.8668441676847523

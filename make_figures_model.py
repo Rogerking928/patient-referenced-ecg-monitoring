@@ -232,7 +232,7 @@ for ax, k in zip(axes.ravel(), keys):
         ax.plot([s + 1], [np.median(data[s])], "o", color=G.INK, ms=3.5, zorder=4)
     ax.set_xticks(range(1, 6))
     ax.set_xticklabels(["Base", "Comp", "Early", "Shock", "Recov"], fontsize=7.5)
-    ax.set_title(k, fontsize=9)
+    ax.set_title(G.feature_label(k), fontsize=9)
 fig.suptitle("Figure 4  Feature distributions by state (black dot = median, display clipped to the "
              "0.5-99.5 percentile): every marginal overlaps heavily, by construction",
              x=0.008, ha="left", fontsize=11, fontweight="bold", color=G.INK)
